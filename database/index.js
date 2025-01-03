@@ -1,9 +1,7 @@
 const mongoose = require('mongoose');
 
-const {dbConnection} = require("../config/environment");
-
 //DB config
-const dbConfig = dbConnection;
+const dbConfig = process.env.dbConnection;
 
 //Connect to Mongo
 mongoose.connect(dbConfig, {
