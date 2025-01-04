@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const User = require("../database/schemas/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const verifyToken = require("./verifyToken");
 
 module.exports = router;
 
@@ -175,3 +176,7 @@ router.post(
       });
   }
 );
+
+router.get('/verifyToken', verifyToken , (req, res) => {
+    res.status(200).json({...req.user});
+})
