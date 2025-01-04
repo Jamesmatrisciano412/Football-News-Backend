@@ -18,7 +18,9 @@ router.post(
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res
+        .status(400)
+        .json({ errors: errors.array(), type: "validation" });
     }
 
     const { email, password } = req.body;
@@ -26,32 +28,65 @@ router.post(
     User.findOne({ email: email })
       .then((user) => {
         if (!user) {
-          return res.status(400).json({ message: "Invalid user email." });
+          return res.status(400).json({
+            errors: [
+              {
+                type: "field",
+                value: "",
+                msg: "Invalid user email.",
+                path: "email",
+                location: "body",
+              },
+            ],
+            type: "validation",
+          });
         }
 
         bcrypt
           .compare(password, user.password)
           .then((isMatch) => {
             if (!isMatch) {
-              return res
-                .status(400)
-                .json({ message: "The password is incorrect." });
+              return res.status(400).json({
+                errors: [
+                  {
+                    type: "field",
+                    value: "",
+                    msg: "The password is incorrect.",
+                    path: "password",
+                    location: "body",
+                  },
+                ],
+                type: "validation",
+              });
             }
 
             const token = jwt.sign(
-              { _id: user._id },
-              process.env.JWT_SECRET_KEY
+              { _id: user._id, fullname: user.fullname, email: user.email },
+              process.env.JWT_SECRET_KEY,
+              {expiresIn: "24h"}
             );
-            res.header("auth-token", token).json({ token: token });
+            
+            res.status(200).json({
+                message: "Sign-in successful!",
+                data: {
+                    fullname: user.fullname,
+                    email: user.email,
+                    token: token
+                }
+            });
           })
           .catch((err) => {
             console.log(err, "compare password in login.");
-            return res.status(500).json({ message: "Login failed." });
+            return res
+              .status(500)
+              .json({ message: "Sign in failed.", type: "request" });
           });
       })
       .catch((err) => {
         console.log(err, "Login find user error.");
-        return res.status(400).json({ message: "Login failed." });
+        return res
+          .status(400)
+          .json({ message: "Sign in failed.", type: "request" });
       });
   }
 );
@@ -69,8 +104,11 @@ router.post(
   body("phone").isLength({ min: 1 }).withMessage("Phone number is required."),
   (req, res) => {
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res
+        .status(400)
+        .json({ errors: errors.array(), type: "validation" });
     }
 
     if (req.body.password != req.body.confirm) {
@@ -84,6 +122,7 @@ router.post(
             location: "body",
           },
         ],
+        type: "validation",
       });
     }
 
@@ -94,31 +133,44 @@ router.post(
       phone: req.body.phone,
     });
 
-    User.find({ fullname: req.body.fullname, email: req.body.email })
+    User.find({ email: req.body.email })
       .then((users) => {
         if (users.length) {
-          return res.status(400).json({ message: "User already exists." });
+          return res.status(400).json({
+            errors: [
+              {
+                type: "field",
+                value: "",
+                msg: "User already exists.",
+                path: "email",
+                location: "body",
+              },
+            ],
+            type: "validation",
+          });
         }
 
         newUser.hashPassword().then(() => {
           newUser
             .save()
             .then((savedUser) => {
-              return res
-                .status(201)
-                .json({
-                  message: "User created successfully",
-                  user: savedUser.fullname,
-                });
+              return res.status(201).json({
+                message: "User created successfully",
+                user: savedUser.fullname,
+              });
             })
             .catch((err) => {
               console.log(err, "Save user in register.");
-              return res.status(400).json({ message: "Create user failed." });
+              return res
+                .status(400)
+                .json({ message: "Create user failed.", type: "request" });
             });
         });
       })
       .catch((err) => {
-        res.status(400).json({ message: "Create user failed." });
+        res
+          .status(400)
+          .json({ message: "Create user failed.", type: "request" });
         console.log(err, "Check user in register.");
       });
   }
