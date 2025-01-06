@@ -6,7 +6,7 @@ const news = require('./news');
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    res.send("This is route index");
+    res.send("Hello. This is Football News backend.");
 })
 
 router.use('/api/user', user);
