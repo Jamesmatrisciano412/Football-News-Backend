@@ -6,7 +6,6 @@ const userSchema = new Schema({
   fullname: {
     type: String,
     required: [true, "Fullname is required."],
-    match: [/^[a-zA-Z0-9_]+$/, "is invalid"],
     index: true,
   },
   email: {
